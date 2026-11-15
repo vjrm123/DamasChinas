@@ -1,0 +1,91 @@
+<%!--
+  PANTALLA DE LA PARTIDA — Damas Chinas
+  El tablero todavía está en construcción. Por ahora se muestran los
+  jugadores de la partida y un botón para volver al lobby.
+--%>
+<Layouts.app flash={@flash}>
+  <section
+    id="tablero-session"
+    phx-hook="JugadorSession"
+    data-codigo={@codigo}
+    class="fixed inset-0 grid place-items-center overflow-y-auto bg-[#0b0a24] p-4 font-nunito text-white"
+  >
+    <%!-- Fondo --%>
+    <div class="pointer-events-none fixed inset-0 bg-[url('/images/fondo.webp')] bg-cover bg-center">
+    </div>
+    <div class="pointer-events-none fixed inset-0 bg-[#08061e]/45"></div>
+
+    <div class={[
+      vidrio(),
+      "relative w-full max-w-3xl animate-emerger rounded-3xl p-6 sm:p-8"
+    ]}>
+      <%!-- Encabezado --%>
+      <header class="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <p class="text-[0.65rem] font-extrabold tracking-[0.18em] text-white/55 uppercase">
+            Sala {@codigo}
+          </p>
+          <h1 class="bg-linear-to-b from-white via-violet-100 via-40% to-purple-400 bg-clip-text font-display text-4xl font-extrabold text-transparent sm:text-5xl">
+            Damas Chinas
+          </h1>
+        </div>
+        <.boton_vidrio
+          id="tablero-volver-lobby"
+          tamano={:chico}
+          icono="hero-arrow-uturn-left"
+          phx-click="volver_lobby"
+        >
+          Volver al lobby
+        </.boton_vidrio>
+      </header>
+
+      <div class="mt-6 grid items-center gap-6 sm:grid-cols-[1fr_16rem]">
+        <%!-- Lugar del tablero --%>
+        <div class="relative grid place-items-center rounded-2xl border border-dashed border-white/25 bg-[#060416]/40 p-6">
+          <img
+            src={~p"/images/tablero2.png"}
+            alt=""
+            class="size-56 animate-suave opacity-35 grayscale-[40%] motion-reduce:animate-none"
+          />
+          <div class="absolute inset-x-6 bottom-6 text-center">
+            <p class="inline-flex items-center gap-2 rounded-full bg-[#060416]/70 px-4 py-2 text-sm font-bold">
+              <.icon name="hero-wrench-screwdriver" class="size-4 text-limon-300" />
+              Tablero en construcción
+            </p>
+          </div>
+        </div>
+
+        <%!-- Jugadores --%>
+        <div>
+          <p class={etiqueta()}>Jugadores</p>
+          <ul id="tablero-jugadores" class="space-y-2">
+            <li
+              :for={jugador <- @jugadores}
+              id={"tablero-jugador-#{jugador.id}"}
+              class={[
+                "flex items-center gap-3 rounded-xl border px-3 py-2.5",
+                if(@turno_jugador && @turno_jugador.id == jugador.id,
+                  do: "border-limon-300/60 bg-limon-500/15",
+                  else: "border-white/15 bg-[#060416]/45"
+                )
+              ]}
+            >
+              <span class={[
+                "size-5 shrink-0 rounded-full shadow-[inset_0_1px_2px_rgba(255,255,255,0.5)]",
+                clase_color(jugador.color)
+              ]}>
+              </span>
+              <span class="flex-1 truncate font-bold">{jugador.nombre}</span>
+              <span :if={jugador.id == @jugador_id} class="text-xs font-semibold text-white/55">
+                (tú)
+              </span>
+            </li>
+          </ul>
+          <p class="mt-4 text-xs leading-relaxed text-white/50">
+            Aquí irá el tablero de estrella con las 10 fichas de cada jugador.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+</Layouts.app>

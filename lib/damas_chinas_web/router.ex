@@ -17,21 +17,14 @@ defmodule DamasChinasWeb.Router do
   scope "/", DamasChinasWeb do
     pipe_through :browser
 
-    get "/", PageController, :home
+    live_session :damas_chinas do
+      live "/", InicioLive, :index
+      live "/lobby/:codigo", LobbyLive, :index
+      live "/tablero/:codigo", TableroLive, :index
+    end
   end
 
-  # Other scopes may use custom stacks.
-  # scope "/api", DamasChinasWeb do
-  #   pipe_through :api
-  # end
-
-  # Enable LiveDashboard and Swoosh mailbox preview in development
   if Application.compile_env(:damas_chinas, :dev_routes) do
-    # If you want to use the LiveDashboard in production, you should put
-    # it behind authentication and allow only admins to access it.
-    # If your application does not have an admins-only section yet,
-    # you can use Plug.BasicAuth to set up some basic authentication
-    # as long as you are also using SSL (which you should anyway).
     import Phoenix.LiveDashboard.Router
 
     scope "/dev" do

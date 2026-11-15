@@ -7,7 +7,7 @@ defmodule DamasChinasWeb.Endpoint do
   @session_options [
     store: :cookie,
     key: "_damas_chinas_key",
-    signing_salt: "ShaSegIU",
+    signing_salt: "4k7BPFKC",
     same_site: "Lax"
   ]
 

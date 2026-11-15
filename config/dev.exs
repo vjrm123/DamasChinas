@@ -13,7 +13,7 @@ config :damas_chinas, DamasChinasWeb.Endpoint,
   check_origin: false,
   code_reloader: true,
   debug_errors: true,
-  secret_key_base: "S7CjkUd40C7gskj4sCyrO4oLY9xOVb71k5zJaX153MfZCZICqkECUnG4qShUKK6C",
+  secret_key_base: "TtventY1GPg4BI6ErVW2Ryjft/thZoy6dCHTZ9HDfYq/BFDRmt1B3qCZl1BvrlH7",
   watchers: [
     esbuild: {Esbuild, :install_and_run, [:damas_chinas, ~w(--sourcemap=inline --watch)]},
     tailwind: {Tailwind, :install_and_run, [:damas_chinas, ~w(--watch)]}
@@ -41,6 +41,21 @@ config :damas_chinas, DamasChinasWeb.Endpoint,
 # If desired, both `http:` and `https:` keys can be
 # configured to run both http and https servers on
 # different ports.
+
+# Reload browser tabs when matching files change.
+config :damas_chinas, DamasChinasWeb.Endpoint,
+  live_reload: [
+    web_console_logger: true,
+    patterns: [
+      # Static assets, except user uploads
+      ~r"priv/static/(?!uploads/).*\.(js|css|png|jpeg|jpg|gif|svg)$"E,
+      # Gettext translations
+      ~r"priv/gettext/.*\.po$"E,
+      # Router, Controllers, LiveViews and LiveComponents
+      ~r"lib/damas_chinas_web/router\.ex$"E,
+      ~r"lib/damas_chinas_web/(controllers|live|components)/.*\.(ex|heex)$"E
+    ]
+  ]
 
 # Enable dev routes for dashboard and mailbox
 config :damas_chinas, dev_routes: true

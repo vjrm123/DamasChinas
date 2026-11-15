@@ -19,12 +19,7 @@ config :damas_chinas, DamasChinasWeb.Endpoint,
     layout: false
   ],
   pubsub_server: DamasChinas.PubSub,
-  live_view: [signing_salt: "jWEoimOU"]
-
-# Configure LiveView
-config :phoenix_live_view,
-  # the attribute set on all root tags. Used for Phoenix.LiveView.ColocatedCSS.
-  root_tag_attribute: "phx-r"
+  live_view: [signing_salt: "phUTuqcd"]
 
 # Configure the mailer
 #
@@ -47,14 +42,13 @@ config :esbuild,
 
 # Configure tailwind (the version is required)
 config :tailwind,
-  version: "4.3.3",
+  version: "4.1.12",
   damas_chinas: [
     args: ~w(
       --input=assets/css/app.css
       --output=priv/static/assets/css/app.css
     ),
-    cd: Path.expand("..", __DIR__),
-    env: %{"NODE_PATH" => [Path.expand("../deps", __DIR__), Mix.Project.build_path()]}
+    cd: Path.expand("..", __DIR__)
   ]
 
 # Configure Elixir's Logger
@@ -64,6 +58,8 @@ config :logger, :default_formatter,
 
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
+
+config :phoenix_live_view, :colocated_js, disable_symlink_warning: true
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

@@ -4,7 +4,7 @@ import Config
 # you can enable the server option below.
 config :damas_chinas, DamasChinasWeb.Endpoint,
   http: [ip: {127, 0, 0, 1}, port: 4002],
-  secret_key_base: "qv3wEQnxJajPDqLW5sy+BD0iO66bahbPjGOUsXrUCkKvI1ttHaLG/4fm8nDyPlp3",
+  secret_key_base: "yMlv47DqLIIl9QQwRZAPxr/OjZbUMXSBqznE3f0hD0yhrAxMKoW6GnjIOUrtVVPZ",
   server: false
 
 # In test we don't send emails

@@ -86,6 +86,8 @@ defmodule DamasChinasWeb do
       import Phoenix.HTML
       # Core UI components
       import DamasChinasWeb.CoreComponents
+      # Estilo vidrio: vidrio(), <.boton_vidrio>, campo(), etiqueta()...
+      import DamasChinasWeb.Vidrio
 
       # Common modules used in templates
       alias Phoenix.LiveView.JS

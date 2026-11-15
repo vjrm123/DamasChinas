@@ -1,0 +1,82 @@
+<%!--
+  PANTALLA DE INICIO
+  Este archivo solo ARMA la pantalla. Cada bloque está en su propio archivo
+  dentro de lib/damas_chinas_web/components/inicio/:
+
+    ┌──────────────────────────────────────────────────┐
+    │ <.cabecera>                                      │
+    │ ┌──────────────┐  ┌──────────────────────(panda)┐ │
+    │ │<.menu_       │  │ <.bienvenida>  ó            │ │
+    │ │  principal>  │  │ <.sala_form>                │ │
+    │ │              │  └─────────────────────────────┘ │
+    │ │              │  <.tarjetas_info>                │
+    │ └──────────────┘                                  │
+    └──────────────────────────────────────────────────┘
+    <.ayuda> = ventana "Cómo jugar" encima de todo
+--%>
+<Layouts.app flash={@flash}>
+  <section
+    id="inicio-session"
+    phx-hook="JugadorSession"
+    class="fixed inset-0 overflow-hidden bg-[#0b0a24] font-nunito text-white"
+  >
+    <%!-- Fondo a pantalla completa (con el filtro del mapa elegido) + degradados para que se lea el texto --%>
+    <div class={[
+      "pointer-events-none absolute inset-0 bg-[url('/images/fondo.webp')] bg-cover bg-center transition-[filter] duration-700",
+      DamasChinasWeb.Inicio.Mapas.obtener(@mapa).filtro
+    ]}>
+    </div>
+    <div class="pointer-events-none absolute inset-0 bg-linear-to-r from-[#08061e]/55 via-[#08061e]/10 via-45% to-[#08061e]/20">
+    </div>
+    <div class="pointer-events-none absolute inset-0 bg-linear-to-t from-[#08061e]/60 to-transparent to-40%">
+    </div>
+
+    <%!--
+      LIENZO de tamaño fijo: 1152×648 en PC y 400×780 en celular.
+      El hook EscalarLienzo (assets/js/app.js) lo agranda o achica para que
+      quepa entero sin scroll. Las clases "movil:" solo aplican en celular.
+    --%>
+    <div
+      id="inicio-lienzo"
+      phx-hook="EscalarLienzo"
+      class="absolute top-1/2 left-1/2 h-[648px] w-[1152px] -translate-1/2 scale-(--inicio-s) movil:h-[780px] movil:w-[400px]"
+    >
+      <div class="flex h-full animate-emerger flex-col gap-4 px-10 py-6 movil:gap-3 movil:px-5 movil:py-5">
+        <.cabecera />
+
+        <div class="grid min-h-0 flex-1 grid-cols-[340px_1fr] gap-9 movil:flex movil:flex-col movil:gap-3">
+          <%!-- Columna izquierda --%>
+          <.menu_principal modo={@modo} visible_en_movil={@menu_movil and is_nil(@modo)} />
+
+          <%!-- Columna derecha (en celular se oculta mientras se ve el menú) --%>
+          <div class={[
+            "flex min-h-0 flex-col gap-4 movil:flex-1 movil:gap-3",
+            (@menu_movil and is_nil(@modo)) && "movil:hidden"
+          ]}>
+            <div class={[
+              "relative min-h-0 flex-1",
+              if(@modo, do: "movil:mt-0", else: "movil:mt-12")
+            ]}>
+              <.panda oculto_en_movil={not is_nil(@modo)} />
+
+              <.bienvenida :if={is_nil(@modo)} />
+
+              <.sala_form
+                :if={@modo}
+                modo={@modo}
+                form={@form}
+                colores={@colores}
+                color={@color}
+                error={@error}
+              />
+            </div>
+
+            <.tarjetas_info mapa={@mapa} />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <.ayuda :if={@ayuda} />
+  </section>
+</Layouts.app>
