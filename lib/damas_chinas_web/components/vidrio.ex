@@ -5,14 +5,7 @@ defmodule DamasChinasWeb.Vidrio do
   use Phoenix.Component
   import DamasChinasWeb.CoreComponents, only: [icon: 1]
 
-  # Recuadro de vidrio.
-  #
-  # `backdrop-brightness-35` oscurece lo que está DETRÁS del recuadro (al 35%),
-  # igual que la capa negra (bg-black/65) que hay detrás de la ventana de reglas.
-  #
-  # vidrio()      → recuadro normal (oscurece el fondo)
-  # vidrio(false) → para ventanas que ya tienen una capa oscura detrás (reglas),
-  #                 así no se oscurece dos veces
+
   def vidrio(oscurecer_fondo \\ true) do
     [
       "border border-white/25 bg-radial-[ellipse_75%_70%_at_50%_50%] from-[#08061a]/70 via-[#151135]/55 via-60% to-[#5b5190]/35 backdrop-blur-[4px] backdrop-saturate-125 shadow-[0_24px_55px_rgba(5,3,22,0.55),inset_0_1px_0_rgba(255,255,255,0.28),inset_0_0_36px_rgba(200,190,255,0.10)]",

@@ -8,8 +8,6 @@ const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute
 
 let Hooks = {}
 
-// Guarda y restaura el ID del jugador en sessionStorage para que al recargar la página
-// el jugador vuelva a la misma sala sin tener que volver a unirse
 Hooks.JugadorSession = {
   mounted() {
     this.handleEvent("set_jugador_id", ({ jugador_id, codigo }) => {
@@ -22,9 +20,7 @@ Hooks.JugadorSession = {
   }
 }
 
-// Escala un "lienzo" de tamaño fijo (definido en CSS) para que quepa entero en la
-// ventana sin scroll, como en un juego. La escala se guarda en <html> como
-// --inicio-s para que los parches de LiveView no la borren.
+
 Hooks.EscalarLienzo = {
   mounted() {
     this.ajustar = () => {

@@ -67,11 +67,14 @@ defmodule DamasChinasWeb.Inicio.Bienvenida do
         </div>
         <div class="pointer-events-none absolute top-[60%] left-1/2 aspect-[2.9/1] w-[135%] -translate-1/2 rounded-full border-2 border-purple-300/80 shadow-[0_0_18px_rgba(192,132,252,0.75),0_0_46px_rgba(147,51,234,0.45),inset_0_0_22px_rgba(192,132,252,0.45)] after:absolute after:-inset-x-[22px] after:-inset-y-[14px] after:rounded-full after:border after:border-purple-300/30">
         </div>
-        <img
-          src={~p"/images/tablero2.png"}
-          alt="Tablero con fichas de colores"
-          class="relative size-[262px] animate-suave drop-shadow-[0_18px_28px_rgba(0,0,0,0.6)] motion-reduce:animate-none movil:size-[280px]"
-        />
+
+        <div class="[transform:perspective(700px)_rotateX(48deg)]">
+          <img
+            src={~p"/images/tablero2.png"}
+            alt="Tablero con fichas de colores"
+            class="relative size-[262px] animate-suave drop-shadow-[0_18px_28px_rgba(0,0,0,0.6)] motion-reduce:animate-none movil:size-[280px]"
+          />
+        </div>
       </div>
     </div>
     """
