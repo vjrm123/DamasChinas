@@ -2,19 +2,21 @@
 defmodule DamasChinasWeb.LobbyLive do
   use DamasChinasWeb, :live_view
 
-  def mount(%{"codigo" => codigo}, session, socket) do
-    jugador_id = session["jugador_id"]
+  alias DamasChinas.Salas
+  alias DamasChinasWeb.JugadorSession
 
-    case DamasChinas.Salas.obtener_sala(codigo) do
+  def mount(%{"codigo" => codigo}, _session, socket) do
+    if connected?(socket), do: Salas.suscribir(codigo)
+
+    case Salas.obtener_sala(codigo) do
+      {:ok, %{fase: fase, codigo: codigo}} when fase in [:jugando, :finalizada] ->
+        {:ok, push_navigate(socket, to: ~p"/tablero/#{codigo}")}
+
       {:ok, estado} ->
-        if connected?(socket) do
-          DamasChinas.Salas.suscribir(codigo)
-        end
-
         {:ok,
          assign(socket,
-           codigo: codigo,
-           jugador_id: jugador_id,
+           codigo: estado.codigo,
+           jugador_id: nil,
            estado: estado,
            color_hex: DamasChinas.Colores.mapa_hex()
          )}
@@ -30,7 +32,7 @@ defmodule DamasChinasWeb.LobbyLive do
   def handle_event("iniciar_partida", _params, socket) do
     %{codigo: codigo, jugador_id: jugador_id} = socket.assigns
 
-    case DamasChinas.Salas.iniciar_partida(codigo, jugador_id) do
+    case Salas.iniciar_partida(codigo, jugador_id) do
       {:ok, _estado} ->
         {:noreply, socket}
 
@@ -39,19 +41,22 @@ defmodule DamasChinasWeb.LobbyLive do
     end
   end
 
-  def handle_event("restore_jugador", %{"jugador_id" => jugador_id}, socket) do
-    jugador_en_sala? = Enum.any?(socket.assigns.estado.jugadores, &(&1.id == jugador_id))
+  def handle_event("restore_jugador", %{"token" => token}, socket) when is_binary(token) do
+    %{codigo: codigo, estado: estado} = socket.assigns
 
-    if jugador_en_sala? do
+    with {:ok, jugador_id} <- JugadorSession.verificar(token, codigo),
+         true <- Enum.any?(estado.jugadores, &(&1.id == jugador_id)) do
       {:noreply, assign(socket, jugador_id: jugador_id)}
     else
-      {:noreply, socket}
+      _ -> {:noreply, socket}
     end
   end
 
+  def handle_event("restore_jugador", _, socket), do: {:noreply, socket}
+
   def handle_event("salir_sala", _params, socket) do
     %{codigo: codigo, jugador_id: jugador_id} = socket.assigns
-    DamasChinas.Salas.salir_sala(codigo, jugador_id)
+    Salas.salir_sala(codigo, jugador_id)
     {:noreply, push_navigate(socket, to: ~p"/")}
   end
 
@@ -74,6 +79,8 @@ defmodule DamasChinasWeb.LobbyLive do
     # Todos navegan al tablero cuando el host inicia
     {:noreply, push_navigate(socket, to: ~p"/tablero/#{socket.assigns.codigo}")}
   end
+
+  def handle_info(_, socket), do: {:noreply, socket}
 
   def es_host?(estado, jugador_id),
     do: estado.host_id == jugador_id

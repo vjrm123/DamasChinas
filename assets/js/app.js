@@ -10,13 +10,18 @@ let Hooks = {}
 
 Hooks.JugadorSession = {
   mounted() {
-    this.handleEvent("set_jugador_id", ({ jugador_id, codigo }) => {
-      sessionStorage.setItem(`damas_jugador_${codigo}`, jugador_id)
+    this.handleEvent("set_jugador", ({token, codigo}) => {
+      sessionStorage.setItem(`damas_jugador_${codigo}`, token)
     })
-
-    const codigo    = this.el.dataset.codigo
-    const jugadorId = codigo && sessionStorage.getItem(`damas_jugador_${codigo}`)
-    if (jugadorId) this.pushEvent("restore_jugador", { jugador_id: jugadorId })
+    this.restaurarJugador()
+  },
+  reconnected() {
+    this.restaurarJugador()
+  },
+  restaurarJugador() {
+    const codigo = this.el.dataset.codigo
+    const token = codigo && sessionStorage.getItem(`damas_jugador_${codigo}`)
+    if (token) this.pushEvent("restore_jugador", {token})
   }
 }
 

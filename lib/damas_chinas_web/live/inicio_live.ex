@@ -11,6 +11,7 @@ defmodule DamasChinasWeb.InicioLive do
   import DamasChinasWeb.Inicio.TarjetasInfo
   import DamasChinasWeb.Inicio.Ayuda
   alias DamasChinasWeb.Inicio.Mapas
+  alias DamasChinasWeb.JugadorSession
 
   def mount(_params, _session, socket) do
     socket =
@@ -103,7 +104,10 @@ defmodule DamasChinasWeb.InicioLive do
       {:ok, %{codigo: codigo, host_id: host_id}} ->
         {:noreply,
          socket
-         |> push_event("set_jugador_id", %{jugador_id: host_id, codigo: codigo})
+         |> push_event("set_jugador", %{
+           token: JugadorSession.firmar(codigo, host_id),
+           codigo: codigo
+         })
          |> push_navigate(to: ~p"/lobby/#{codigo}")}
 
       {:error, razon} ->
@@ -120,10 +124,13 @@ defmodule DamasChinasWeb.InicioLive do
     %{codigo_entrada: codigo, nombre: nombre, color: color} = socket.assigns
 
     case DamasChinas.Salas.unirse_sala(codigo, nombre, color) do
-      {:ok, %{jugador_id: jugador_id}} ->
+      {:ok, %{jugador_id: jugador_id, estado: %{codigo: codigo}}} ->
         {:noreply,
          socket
-         |> push_event("set_jugador_id", %{jugador_id: jugador_id, codigo: codigo})
+         |> push_event("set_jugador", %{
+           token: JugadorSession.firmar(codigo, jugador_id),
+           codigo: codigo
+         })
          |> push_navigate(to: ~p"/lobby/#{codigo}")}
 
       {:error, razon} ->
@@ -155,6 +162,7 @@ defmodule DamasChinasWeb.InicioLive do
   end
 
   defp traducir_error(:sala_no_existe), do: "La sala no existe"
+  defp traducir_error(:ya_iniciada), do: "La partida de esta sala ya comenzó"
   defp traducir_error(:sala_llena), do: "La sala está llena (máximo 6 jugadores)"
   defp traducir_error(:color_tomado), do: "Ese color ya fue elegido por otro jugador"
   defp traducir_error(:nombre_invalido), do: "El nombre debe tener al menos 2 caracteres"

@@ -83,3 +83,74 @@
   border-color: rgba(255,255,255,0.50) !important;
   box-shadow: 0 0 0 3px rgba(255,255,255,0.12);
 }
+
+.tablero-estrella {
+  position: relative;
+  isolation: isolate;
+  aspect-ratio: 1;
+  filter: drop-shadow(0 12px 18px #06041699);
+}
+
+.tablero-estrella::before {
+  position: absolute;
+  inset: 0;
+  content: "";
+  clip-path: polygon(
+    50% 1%, 66% 24%, 98% 24%, 82% 50%, 98% 76%, 66% 76%,
+    50% 99%, 34% 76%, 2% 76%, 18% 50%, 2% 24%, 34% 24%
+  );
+  background:
+    repeating-linear-gradient(7deg, #7f441115 0 1px, transparent 1px 7px),
+    radial-gradient(ellipse at 45% 25%, #fff1ce, #e6b981 65%, #b27643);
+}
+
+.tablero-casilla {
+  position: absolute;
+  top: var(--casilla-y);
+  left: var(--casilla-x);
+  width: 5.4%;
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  border: 1px solid #814e2b75;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 70%, #c89964, #98643d);
+  box-shadow: inset 0 2px 3px #62391766, 0 1px #ffeccc;
+  transition: scale 150ms ease, box-shadow 150ms ease;
+}
+
+.tablero-punta {
+  background: radial-gradient(circle at 50% 70%, color-mix(in srgb, var(--casilla-color) 34%, #e4b47c), #9f7145);
+}
+
+.tablero-ficha {
+  background: radial-gradient(circle at 36% 26%, #fff9, transparent 38%),
+    linear-gradient(140deg, var(--casilla-color), color-mix(in srgb, var(--casilla-color) 72%, #25132d));
+  box-shadow: inset 0 1px 2px #fff8, inset 0 -2px 3px #0004, 0 2px 3px #5a342d99;
+}
+
+.tablero-casilla:enabled {
+  cursor: pointer;
+}
+
+.tablero-casilla:enabled:hover {
+  scale: 1.13;
+  z-index: 1;
+}
+
+.tablero-casilla:focus-visible,
+.tablero-seleccion {
+  outline: 2px solid #fff9df;
+  outline-offset: 2px;
+  z-index: 1;
+}
+
+.tablero-destino {
+  border: 2px solid #542893;
+  background: radial-gradient(circle, #faf1ff 29%, #b674fa 34%, #a256e6 58%, #8149be 100%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tablero-casilla {
+    transition: none;
+  }
+}

@@ -1,22 +1,22 @@
 defmodule DamasChinasWeb.TableroLive do
-  @moduledoc """
-  Pantalla de la partida de Damas Chinas.
+  @moduledoc "Tablero sincronizado y selección de jugadas."
 
-  Por ahora el tablero está EN CONSTRUCCIÓN: muestra los jugadores de la
-  partida y permite volver al lobby. Cuando se programe el juego
-  (`DamasChinas.Board` / `DamasChinas.Reglas`), aquí irán los eventos para seleccionar
-  y mover fichas.
-  """
   use DamasChinasWeb, :live_view
 
-  def mount(%{"codigo" => codigo}, _session, socket) do
-    case DamasChinas.Salas.obtener_sala(codigo) do
-      {:ok, estado} ->
-        if connected?(socket), do: DamasChinas.Salas.suscribir(codigo)
+  alias DamasChinas.{Board, Colores, GameServer, Reglas, Salas}
+  alias DamasChinasWeb.JugadorSession
 
+  def mount(%{"codigo" => codigo}, _session, socket) do
+    if connected?(socket), do: Salas.suscribir(codigo)
+
+    case Salas.obtener_sala(codigo) do
+      {:ok, %{fase: :esperando, codigo: codigo}} ->
+        {:ok, push_navigate(socket, to: ~p"/lobby/#{codigo}")}
+
+      {:ok, estado} ->
         {:ok,
          socket
-         |> assign(codigo: codigo, jugador_id: nil)
+         |> assign(codigo: estado.codigo, jugador_id: nil, filas: Board.filas())
          |> sync_estado(estado)}
 
       {:error, :sala_no_existe} ->
@@ -27,54 +27,106 @@ defmodule DamasChinasWeb.TableroLive do
     end
   end
 
-  # ── Eventos ──────────────────────────────────────────────────────
+  def handle_event("restore_jugador", %{"token" => token}, socket) when is_binary(token) do
+    %{codigo: codigo, jugadores: jugadores} = socket.assigns
 
-  # El hook JugadorSession recupera quién soy al recargar la página
-  def handle_event("restore_jugador", %{"jugador_id" => jid}, socket) do
-    en_sala? = Enum.any?(socket.assigns.jugadores, &(&1.id == jid))
-    {:noreply, if(en_sala?, do: assign(socket, jugador_id: jid), else: socket)}
-  end
-
-  # Termina la partida para todos y vuelven al lobby
-  def handle_event("volver_lobby", _params, socket) do
-    %{codigo: codigo, jugador_id: jid} = socket.assigns
-    DamasChinas.GameServer.rendirse(codigo, jid)
-    {:noreply, socket}
-  end
-
-  # ── Mensajes de la sala (PubSub) ─────────────────────────────────
-
-  def handle_info({:partida_iniciada, nuevo_estado}, socket),
-    do: {:noreply, sync_estado(socket, nuevo_estado)}
-
-  def handle_info({:jugador_salio, jugador_id_saliente, nuevo_estado}, socket) do
-    if socket.assigns.jugador_id == jugador_id_saliente do
-      {:noreply, push_navigate(socket, to: ~p"/")}
+    with {:ok, jugador_id} <- JugadorSession.verificar(token, codigo),
+         true <- Enum.any?(jugadores, &(&1.id == jugador_id)) do
+      {:noreply, assign(socket, jugador_id: jugador_id)}
     else
-      {:noreply, sync_estado(socket, nuevo_estado)}
+      _ -> {:noreply, socket}
     end
   end
 
-  def handle_info({:partida_rendida, _nuevo_estado}, socket),
+  def handle_event("restore_jugador", _, socket), do: {:noreply, socket}
+
+  def handle_event("casilla", %{"x" => x, "y" => y}, socket)
+      when is_binary(x) and is_binary(y) do
+    with %{id: jugador_id} <- socket.assigns.turno_jugador,
+         true <- socket.assigns.fase == :jugando and jugador_id == socket.assigns.jugador_id,
+         {x, ""} <- Integer.parse(x),
+         {y, ""} <- Integer.parse(y),
+         true <- Board.casilla?({x, y}) do
+      {:noreply, seleccionar(socket, {x, y}, jugador_id)}
+    else
+      _ -> {:noreply, socket}
+    end
+  end
+
+  def handle_event("casilla", _, socket), do: {:noreply, socket}
+
+  def handle_event("volver_lobby", _params, socket) do
+    %{codigo: codigo, jugador_id: jugador_id} = socket.assigns
+
+    case GameServer.rendirse(codigo, jugador_id) do
+      {:ok, _} -> {:noreply, socket}
+      {:error, _} -> {:noreply, put_flash(socket, :error, "No se pudo cerrar la partida.")}
+    end
+  end
+
+  def handle_info({evento, estado}, socket)
+      when evento in [:partida_iniciada, :tablero_actualizado],
+      do: {:noreply, sync_estado(socket, estado)}
+
+  def handle_info({:jugador_salio, jugador_id, estado}, socket) do
+    if socket.assigns.jugador_id == jugador_id do
+      {:noreply, push_navigate(socket, to: ~p"/")}
+    else
+      {:noreply, sync_estado(socket, estado)}
+    end
+  end
+
+  def handle_info({:partida_rendida, _estado}, socket),
     do: {:noreply, push_navigate(socket, to: ~p"/lobby/#{socket.assigns.codigo}")}
 
   def handle_info(_, socket), do: {:noreply, socket}
 
-  # Bolita de color de cada jugador (clases completas para que Tailwind las encuentre)
-  defp clase_color(:rojo), do: "bg-red-500"
-  defp clase_color(:azul), do: "bg-blue-500"
-  defp clase_color(:verde), do: "bg-limon-500"
-  defp clase_color(:amarillo), do: "bg-amber-400"
-  defp clase_color(:morado), do: "bg-purple-600"
-  defp clase_color(:naranja), do: "bg-orange-500"
-  defp clase_color(_), do: "bg-white/50"
+  defp seleccionar(socket, posicion, jugador_id) do
+    %{seleccion: seleccion, destinos: destinos, tablero: tablero, codigo: codigo} = socket.assigns
 
-  # Copia del estado del servidor a los assigns de la vista
+    cond do
+      seleccion == posicion ->
+        assign(socket, seleccion: nil, destinos: MapSet.new())
+
+      MapSet.member?(destinos, posicion) ->
+        case GameServer.mover(codigo, jugador_id, seleccion, posicion) do
+          {:ok, _} -> assign(socket, seleccion: nil, destinos: MapSet.new())
+          {:error, _} -> put_flash(socket, :error, "La jugada ya no está disponible.")
+        end
+
+      match?(%{id: ^jugador_id}, Map.get(tablero, posicion)) ->
+        assign(socket, seleccion: posicion, destinos: Reglas.destinos(tablero, posicion))
+
+      true ->
+        socket
+    end
+  end
+
   defp sync_estado(socket, estado) do
     assign(socket,
       fase: estado.fase,
       jugadores: estado.jugadores,
-      turno_jugador: Enum.at(estado.jugadores, estado.turno_idx)
+      tablero: estado.tablero,
+      ganador: Enum.find(estado.jugadores, &(&1.id == estado.ganador_id)),
+      turno_jugador: Enum.at(estado.jugadores, estado.turno_idx),
+      seleccion: nil,
+      destinos: MapSet.new()
     )
+  end
+
+  defp estilo_casilla({x, y}, ficha, punta) do
+    color = if ficha, do: Colores.hex(ficha.color), else: Colores.hex(punta) || "#9f7145"
+    "--casilla-x: #{50 + x * 3.58}%; --casilla-y: #{6 + y * 5.5}%; --casilla-color: #{color};"
+  end
+
+  defp etiqueta_casilla(ficha, destino?, x, y) do
+    contenido =
+      cond do
+        ficha -> "Ficha #{ficha.color} de #{ficha.nombre}"
+        destino? -> "Destino disponible"
+        true -> "Casilla vacía"
+      end
+
+    "#{contenido}, fila #{y + 1}, posición #{x + 13}"
   end
 end

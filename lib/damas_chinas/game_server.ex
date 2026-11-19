@@ -1,16 +1,9 @@
 defmodule DamasChinas.GameServer do
-  @moduledoc """
-  Un proceso por sala. Guarda el `DamasChinas.Estado` y avisa a todos los jugadores
-  de la sala (PubSub) cuando algo cambia.
-
-  Por ahora maneja solo la sala: unirse, salir, iniciar y volver al lobby.
-  Las jugadas de Damas Chinas (mover / saltar fichas, turnos, ganador) se
-  agregarán aquí usando `DamasChinas.Reglas` cuando se programe el juego.
-  """
-  use GenServer
+  @moduledoc "Un proceso por sala que valida jugadas y publica el estado de la partida."
+  use GenServer, restart: :transient
   require Logger
 
-  alias DamasChinas.Estado
+  alias DamasChinas.{Board, Estado, Reglas}
 
   # Damas Chinas: una punta de la estrella por jugador
   @max_jugadores 6
@@ -27,6 +20,9 @@ defmodule DamasChinas.GameServer do
   def unirse(codigo, jugador), do: GenServer.call(via(codigo), {:unirse, jugador})
   def salir(codigo, jugador_id), do: GenServer.cast(via(codigo), {:salir, jugador_id})
   def iniciar(codigo, host_id), do: GenServer.call(via(codigo), {:iniciar, host_id})
+
+  def mover(codigo, jugador_id, desde, hasta),
+    do: GenServer.call(via(codigo), {:mover, jugador_id, desde, hasta})
 
   @doc "Termina la partida y todos vuelven al lobby."
   def rendirse(codigo, jugador_id), do: GenServer.call(via(codigo), {:rendirse, jugador_id})
@@ -50,6 +46,9 @@ defmodule DamasChinas.GameServer do
   @impl true
   def handle_call({:unirse, jugador}, _from, estado) do
     cond do
+      estado.fase != :esperando ->
+        {:reply, {:error, :ya_iniciada}, estado, @timeout_sala}
+
       length(estado.jugadores) >= @max_jugadores ->
         {:reply, {:error, :sala_llena}, estado, @timeout_sala}
 
@@ -79,23 +78,48 @@ defmodule DamasChinas.GameServer do
         {:reply, {:error, :ya_iniciada}, estado, @timeout_sala}
 
       true ->
-        # Cuando exista DamasChinas.Board, aquí se arma el tablero inicial:
-        # tablero: DamasChinas.Board.nuevo(estado.jugadores)
-        nuevo = %{estado | fase: :jugando, tablero: %{}, turno_idx: 0}
+        nuevo = %{estado | fase: :jugando, tablero: Board.nuevo(estado.jugadores), turno_idx: 0}
         broadcast!(nuevo.codigo, {:partida_iniciada, nuevo})
         {:reply, {:ok, nuevo}, nuevo, @timeout_sala}
     end
   end
 
   @impl true
-  def handle_call({:rendirse, jugador_id}, _from, estado) do
-    if estado.fase != :jugando do
-      {:reply, {:error, :partida_no_activa}, estado, @timeout_sala}
-    else
-      nuevo = %{estado | fase: :esperando, tablero: %{}, turno_idx: 0}
-      Logger.info("Sala #{estado.codigo}: jugador #{jugador_id} terminó la partida")
-      broadcast!(nuevo.codigo, {:partida_rendida, nuevo})
+  def handle_call({:mover, jugador_id, desde, hasta}, _from, estado) do
+    jugador = Enum.at(estado.jugadores, estado.turno_idx)
+
+    with :jugando <- estado.fase,
+         %{id: ^jugador_id} <- jugador,
+         %{id: ^jugador_id} <- Map.get(estado.tablero, desde),
+         true <- MapSet.member?(Reglas.destinos(estado.tablero, desde), hasta) do
+      tablero = estado.tablero |> Map.delete(desde) |> Map.put(hasta, jugador)
+      nuevo = %{estado | tablero: tablero}
+
+      nuevo =
+        if Reglas.gano?(tablero, jugador),
+          do: %{nuevo | fase: :finalizada, ganador_id: jugador_id},
+          else: Estado.pasar_turno(nuevo)
+
+      broadcast!(nuevo.codigo, {:tablero_actualizado, nuevo})
       {:reply, {:ok, nuevo}, nuevo, @timeout_sala}
+    else
+      _ -> {:reply, {:error, :movimiento_invalido}, estado, @timeout_sala}
+    end
+  end
+
+  @impl true
+  def handle_call({:rendirse, jugador_id}, _from, estado) do
+    cond do
+      not jugador_ya_existe?(estado.jugadores, jugador_id) ->
+        {:reply, {:error, :no_es_jugador}, estado, @timeout_sala}
+
+      estado.fase == :esperando ->
+        {:reply, {:error, :partida_no_activa}, estado, @timeout_sala}
+
+      true ->
+        nuevo = %{estado | fase: :esperando, tablero: %{}, turno_idx: 0, ganador_id: nil}
+        broadcast!(nuevo.codigo, {:partida_rendida, nuevo})
+        {:reply, {:ok, nuevo}, nuevo, @timeout_sala}
     end
   end
 
@@ -125,8 +149,10 @@ defmodule DamasChinas.GameServer do
     idx_saliente = Enum.find_index(estado.jugadores, &(&1.id == jugador_id))
     jugadores = Enum.reject(estado.jugadores, &(&1.id == jugador_id))
 
+    tablero = Map.reject(estado.tablero, fn {_posicion, ficha} -> ficha.id == jugador_id end)
+
     nuevo =
-      %{estado | jugadores: jugadores, tablero: Map.delete(estado.tablero, jugador_id)}
+      %{estado | jugadores: jugadores, tablero: tablero}
       |> pasar_host(estado.host_id == jugador_id)
       |> ajustar_turno(idx_saliente)
       |> terminar_si_queda_uno()

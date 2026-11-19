@@ -48,12 +48,12 @@ config :damas_chinas, DamasChinasWeb.Endpoint,
     web_console_logger: true,
     patterns: [
       # Static assets, except user uploads
-      ~r"priv/static/(?!uploads/).*\.(js|css|png|jpeg|jpg|gif|svg)$"E,
+      ~r"priv/static/(?!uploads/).*\.(js|css|png|jpeg|jpg|gif|svg)$",
       # Gettext translations
-      ~r"priv/gettext/.*\.po$"E,
+      ~r"priv/gettext/.*\.po$",
       # Router, Controllers, LiveViews and LiveComponents
-      ~r"lib/damas_chinas_web/router\.ex$"E,
-      ~r"lib/damas_chinas_web/(controllers|live|components)/.*\.(ex|heex)$"E
+      ~r"lib/damas_chinas_web/router\.ex$",
+      ~r"lib/damas_chinas_web/(controllers|live|components)/.*\.(ex|heex)$"
     ]
   ]
 

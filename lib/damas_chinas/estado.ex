@@ -1,11 +1,5 @@
 defmodule DamasChinas.Estado do
-  @moduledoc """
-  Estado de una sala de Damas Chinas (lo guarda `DamasChinas.GameServer`).
-
-  Por ahora solo maneja la sala: jugadores, fase y turno.
-  El campo `tablero` queda listo para cuando se programe el juego
-  (ver `DamasChinas.Board` y `DamasChinas.Reglas`).
-  """
+  @moduledoc "Estado de la sala y su partida."
   @enforce_keys [:codigo, :host_id]
   defstruct [
     :codigo,
@@ -17,8 +11,9 @@ defmodule DamasChinas.Estado do
     fase: :esperando,
     # posición (en la lista de jugadores) de quien tiene el turno
     turno_idx: 0,
-    # posiciones de las fichas: se llenará con DamasChinas.Board
-    tablero: %{}
+    # %{casilla => jugador}
+    tablero: %{},
+    ganador_id: nil
   ]
 
   @doc "Pasa el turno al siguiente jugador."
