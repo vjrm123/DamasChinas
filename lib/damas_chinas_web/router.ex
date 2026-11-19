@@ -1,4 +1,5 @@
 defmodule DamasChinasWeb.Router do
+  # importa las rutas de liveview para poder ser usado.
   use DamasChinasWeb, :router
 
   pipeline :browser do

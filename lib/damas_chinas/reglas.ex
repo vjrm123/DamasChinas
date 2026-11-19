@@ -14,9 +14,12 @@ defmodule DamasChinas.Reglas do
           posicion = sumar(origen, direccion),
           libre?(tablero, posicion),
           do: posicion
-
-    saltos = explorar([origen], ocupadas, MapSet.new([origen]))
-    MapSet.union(MapSet.new(pasos), MapSet.delete(saltos, origen))
+    
+    # Pruebas de saltos aun pendiente
+    # saltos = explorar([origen], ocupadas, MapSet.new([origen]))
+    # unir los saltos con lo permitido aun pendiente de pruebas
+    # MapSet.union(MapSet.new(pasos), MapSet.delete(saltos, origen))
+    MapSet.new(pasos)
   end
 
   def gano?(tablero, jugador) do
